@@ -1,0 +1,144 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ResultBadge from '../../components/ResultBadge.astro';
+import players from '../../data/players.json';
+import matches from '../../data/matches.json';
+import { getPlayerStats, getSeasons, result, shortDate } from '../../lib/stats';
+import type { Player, Match } from '../../lib/stats';
+
+export function getStaticPaths() {
+  return (players as Player[]).map((p) => ({
+    params: { player: p.id },
+    props: { player: p },
+  }));
+}
+
+interface Props {
+  player: Player;
+}
+const { player } = Astro.props;
+
+const typedMatches = matches as Match[];
+const seasons = getSeasons(typedMatches);
+
+const seasonStats = seasons.map((s) => ({
+  season: s,
+  ...getPlayerStats(player.id, typedMatches, s),
+}));
+
+const playerMatches = typedMatches
+  .filter((m) => m.squad.includes(player.id))
+  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+---
+
+<Layout title={player.name}>
+  <a href="/squad" class="text-muted text-sm hover:text-white transition-colors mb-6 inline-block">
+    ← Squad
+  </a>
+
+  <div class="bg-surface border border-border rounded-xl p-6 mb-8 flex items-center gap-6">
+    <div
+      class="w-20 h-20 rounded-full bg-surface-2 border border-border flex items-center justify-center text-3xl font-black text-accent-light shrink-0"
+    >
+      {player.name.split(' ').map((n: string) => n[0]).join('')}
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-baseline gap-3">
+        <h1 class="text-3xl font-black tracking-tight">{player.name}</h1>
+        <span class="text-5xl font-black text-border tabular-nums">#{player.number}</span>
+      </div>
+      <p class="text-muted mt-1">{player.position}</p>
+      {player.bio && <p class="text-sm mt-3 text-white/70">{player.bio}</p>}
+    </div>
+  </div>
+
+  <section class="mb-8">
+    <h2 class="text-sm uppercase tracking-widest text-muted mb-3">Stats by Season</h2>
+    <div class="bg-surface border border-border rounded-xl overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+            <th class="px-4 py-3 text-left">Season</th>
+            <th class="px-4 py-3 text-center">Apps</th>
+            <th class="px-4 py-3 text-center">Goals</th>
+            <th class="px-4 py-3 text-center">Assists</th>
+            <th class="px-4 py-3 text-center">MOM</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border">
+          {
+            seasonStats.map((s) => (
+              <tr class="hover:bg-surface-2 transition-colors">
+                <td class="px-4 py-3 font-medium">{s.season}</td>
+                <td class="px-4 py-3 text-center tabular-nums">{s.appearances}</td>
+                <td class="px-4 py-3 text-center tabular-nums font-bold">{s.goals}</td>
+                <td class="px-4 py-3 text-center tabular-nums">{s.assists}</td>
+                <td class="px-4 py-3 text-center tabular-nums">{s.moms}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="text-sm uppercase tracking-widest text-muted mb-3">Match History</h2>
+    {
+      playerMatches.length === 0 ? (
+        <p class="text-muted text-sm">No matches recorded yet.</p>
+      ) : (
+        <div class="bg-surface border border-border rounded-xl overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                <th class="px-4 py-3 text-left">Date</th>
+                <th class="px-4 py-3 text-left">Opponent</th>
+                <th class="px-4 py-3 text-center">Score</th>
+                <th class="px-4 py-3 text-center">Result</th>
+                <th class="px-4 py-3 text-center">G</th>
+                <th class="px-4 py-3 text-center">A</th>
+                <th class="px-4 py-3 text-center">MOM</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+              {playerMatches.map((m) => {
+                const r = result(m.score);
+                const goals = m.scorers.find((s) => s.player === player.id)?.goals ?? 0;
+                const assists = m.assisters.find((a) => a.player === player.id)?.assists ?? 0;
+                const isMom = m.mom === player.id;
+                return (
+                  <tr class="hover:bg-surface-2 transition-colors">
+                    <td class="px-4 py-3 text-muted text-xs whitespace-nowrap">
+                      {shortDate(m.date)}
+                    </td>
+                    <td class="px-4 py-3 font-medium">
+                      <a href={`/matches/${m.id}`} class="hover:text-accent-light transition-colors">
+                        {m.opponent}
+                      </a>
+                    </td>
+                    <td class="px-4 py-3 text-center font-mono font-bold tabular-nums">
+                      {m.score.us}–{m.score.them}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                      <ResultBadge r={r} />
+                    </td>
+                    <td class="px-4 py-3 text-center tabular-nums">
+                      {goals > 0 ? <span class="font-bold text-accent-light">{goals}</span> : <span class="text-border">—</span>}
+                    </td>
+                    <td class="px-4 py-3 text-center tabular-nums">
+                      {assists > 0 ? <span class="font-bold">{assists}</span> : <span class="text-border">—</span>}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                      {isMom ? <span class="text-yellow-400 text-sm" title="Man of the Match">★</span> : <span class="text-border">—</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )
+    }
+  </section>
+</Layout>

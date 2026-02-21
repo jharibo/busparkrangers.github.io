@@ -1,0 +1,117 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ResultBadge from '../components/ResultBadge.astro';
+import StatPill from '../components/StatPill.astro';
+import matches from '../data/matches.json';
+import players from '../data/players.json';
+import { result, getPlayerStats, getSeasons, formatDate, shortDate } from '../lib/stats';
+
+const sorted = [...matches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+const latest = sorted[0];
+const recent = sorted.slice(0, 5);
+
+const seasons = getSeasons(matches as any);
+const currentSeason = seasons[0];
+const sm = matches.filter((m) => m.season === currentSeason);
+
+const played = sm.length;
+const won = sm.filter((m) => result(m.score) === 'W').length;
+const lost = sm.filter((m) => result(m.score) === 'L').length;
+const goalsFor = sm.reduce((acc, m) => acc + m.score.us, 0);
+const goalsAgainst = sm.reduce((acc, m) => acc + m.score.them, 0);
+---
+
+<Layout title="Home">
+  {
+    latest && (
+      <section class="mb-10">
+        <p class="text-muted text-xs uppercase tracking-widest mb-3">Latest Result</p>
+        <a
+          href={`/matches/${latest.id}`}
+          class="block bg-surface border border-border rounded-xl p-6 hover:border-accent/50 transition-colors"
+        >
+          <div class="flex items-center justify-center gap-6 mb-4">
+            <div class="text-right flex-1">
+              <p class="font-bold text-lg leading-tight">Bus Park Rangers</p>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+              <span class="text-5xl font-black tabular-nums">{latest.score.us}</span>
+              <span class="text-muted text-2xl">—</span>
+              <span class="text-5xl font-black tabular-nums">{latest.score.them}</span>
+            </div>
+            <div class="flex-1">
+              <p class="font-bold text-lg leading-tight">{latest.opponent}</p>
+            </div>
+          </div>
+          <div class="flex items-center justify-center gap-3 text-sm text-muted flex-wrap">
+            <span>{formatDate(latest.date)}</span>
+            <span>·</span>
+            <span class="capitalize">{latest.venue}</span>
+            {latest.mom && (
+              <>
+                <span>·</span>
+                <span>
+                  MOM:{' '}
+                  <span class="text-white font-medium">
+                    {players.find((p) => p.id === latest.mom)?.name ?? latest.mom}
+                  </span>
+                </span>
+              </>
+            )}
+          </div>
+          <div class="mt-4 flex justify-center">
+            <ResultBadge r={result(latest.score)} size="base" />
+          </div>
+        </a>
+      </section>
+    )
+  }
+
+  <section class="mb-10">
+    <p class="text-muted text-xs uppercase tracking-widest mb-3">{currentSeason} Season</p>
+    <div class="bg-surface border border-border rounded-xl px-6 py-5 flex justify-around">
+      <StatPill label="Played" value={played} />
+      <StatPill label="Won" value={won} />
+      <StatPill label="Lost" value={lost} />
+      <StatPill label="Goals For" value={goalsFor} />
+      <StatPill label="Goals Against" value={goalsAgainst} />
+    </div>
+  </section>
+
+  {
+    recent.length > 1 && (
+      <section class="mb-10">
+        <p class="text-muted text-xs uppercase tracking-widest mb-3">Recent Results</p>
+        <div class="bg-surface border border-border rounded-xl overflow-hidden">
+          <table class="w-full text-sm">
+            <tbody class="divide-y divide-border">
+              {recent.map((m) => {
+                const r = result(m.score);
+                return (
+                  <tr class="hover:bg-surface-2 transition-colors">
+                    <td class="px-4 py-3 text-muted text-xs whitespace-nowrap">
+                      {shortDate(m.date)}
+                    </td>
+                    <td class="px-4 py-3 font-medium">{m.opponent}</td>
+                    <td class="px-4 py-3 text-muted text-xs capitalize">{m.venue}</td>
+                    <td class="px-4 py-3 font-mono font-bold tabular-nums">
+                      {m.score.us}–{m.score.them}
+                    </td>
+                    <td class="px-4 py-3">
+                      <ResultBadge r={r} />
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                      <a href={`/matches/${m.id}`} class="text-accent-light text-xs hover:underline">
+                        View →
+                      </a>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    )
+  }
+</Layout>

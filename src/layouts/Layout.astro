@@ -1,0 +1,63 @@
+---
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+const path = Astro.url.pathname;
+const nav = [
+  { href: '/', label: 'Home' },
+  { href: '/squad', label: 'Squad' },
+  { href: '/results', label: 'Results' },
+];
+---
+
+<!doctype html>
+<html lang="en" class="bg-pitch text-white antialiased">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title} — Bus Park Rangers</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <header class="border-b border-border sticky top-0 bg-pitch/95 backdrop-blur z-10">
+      <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-3 group">
+          <div
+            class="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-xs font-black tracking-tight"
+          >
+            BPR
+          </div>
+          <span class="font-bold tracking-tight group-hover:text-accent-light transition-colors">
+            Bus Park Rangers
+          </span>
+        </a>
+        <nav class="flex gap-1">
+          {
+            nav.map(({ href, label }) => (
+              <a
+                href={href}
+                class={[
+                  'px-3 py-1.5 rounded text-sm transition-colors',
+                  path === href
+                    ? 'text-white bg-surface-2'
+                    : 'text-muted hover:text-white hover:bg-surface',
+                ].join(' ')}
+              >
+                {label}
+              </a>
+            ))
+          }
+        </nav>
+      </div>
+    </header>
+
+    <main class="flex-1 max-w-4xl mx-auto px-4 py-8 w-full">
+      <slot />
+    </main>
+
+    <footer class="border-t border-border py-6 text-center text-muted text-xs">
+      Bus Park Rangers &copy; {new Date().getFullYear()}
+    </footer>
+  </body>
+</html>

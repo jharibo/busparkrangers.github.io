@@ -1,0 +1,63 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import players from '../../data/players.json';
+import matches from '../../data/matches.json';
+import { getPlayerStats, getSeasons } from '../../lib/stats';
+
+const seasons = getSeasons(matches as any);
+const currentSeason = seasons[0];
+---
+
+<Layout title="Squad">
+  <div class="mb-8">
+    <h1 class="text-2xl font-black tracking-tight">Squad</h1>
+    <p class="text-muted text-sm mt-1">{currentSeason} season</p>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    {
+      players.map((player) => {
+        const stats = getPlayerStats(player.id, matches as any, currentSeason);
+        return (
+          <a
+            href={`/squad/${player.id}`}
+            class="bg-surface border border-border rounded-xl p-5 hover:border-accent/50 transition-colors group block"
+          >
+            <div class="flex items-start justify-between mb-4">
+              <div
+                class="w-14 h-14 rounded-full bg-surface-2 border border-border flex items-center justify-center text-xl font-black text-accent-light"
+              >
+                {player.name.split(' ').map((n: string) => n[0]).join('')}
+              </div>
+              <span class="text-4xl font-black text-border group-hover:text-accent/30 transition-colors tabular-nums">
+                {player.number}
+              </span>
+            </div>
+            <p class="font-bold text-lg leading-tight group-hover:text-accent-light transition-colors">
+              {player.name}
+            </p>
+            <p class="text-muted text-sm mb-4">{player.position}</p>
+            <div class="flex gap-4 text-sm border-t border-border pt-4">
+              <div class="text-center flex-1">
+                <p class="font-black text-lg">{stats.goals}</p>
+                <p class="text-muted text-xs">Goals</p>
+              </div>
+              <div class="text-center flex-1">
+                <p class="font-black text-lg">{stats.assists}</p>
+                <p class="text-muted text-xs">Assists</p>
+              </div>
+              <div class="text-center flex-1">
+                <p class="font-black text-lg">{stats.moms}</p>
+                <p class="text-muted text-xs">MOM</p>
+              </div>
+              <div class="text-center flex-1">
+                <p class="font-black text-lg">{stats.appearances}</p>
+                <p class="text-muted text-xs">Apps</p>
+              </div>
+            </div>
+          </a>
+        );
+      })
+    }
+  </div>
+</Layout>

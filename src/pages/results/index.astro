@@ -1,0 +1,103 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ResultBadge from '../../components/ResultBadge.astro';
+import matches from '../../data/matches.json';
+import players from '../../data/players.json';
+import { result, getSeasons, shortDate } from '../../lib/stats';
+import type { Match } from '../../lib/stats';
+
+const typedMatches = matches as Match[];
+const seasons = getSeasons(typedMatches);
+const sorted = [...typedMatches].sort(
+  (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+);
+---
+
+<Layout title="Results">
+  <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
+    <h1 class="text-2xl font-black tracking-tight">Results</h1>
+    <select
+      id="season-filter"
+      class="bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent"
+    >
+      <option value="all">All Seasons</option>
+      {seasons.map((s) => <option value={s}>{s}</option>)}
+    </select>
+  </div>
+
+  <div class="bg-surface border border-border rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+          <th class="px-4 py-3 text-left">Date</th>
+          <th class="px-4 py-3 text-left">Opponent</th>
+          <th class="px-4 py-3 text-left hidden sm:table-cell">Venue</th>
+          <th class="px-4 py-3 text-center">Score</th>
+          <th class="px-4 py-3 text-center">Result</th>
+          <th class="px-4 py-3 text-left hidden md:table-cell">MOM</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border" id="results-body">
+        {
+          sorted.map((m) => {
+            const r = result(m.score);
+            const momPlayer = m.mom ? players.find((p) => p.id === m.mom) : null;
+            return (
+              <tr
+                class="hover:bg-surface-2 transition-colors"
+                data-season={m.season}
+              >
+                <td class="px-4 py-3 text-muted text-xs whitespace-nowrap">{shortDate(m.date)}</td>
+                <td class="px-4 py-3 font-medium">{m.opponent}</td>
+                <td class="px-4 py-3 text-muted capitalize hidden sm:table-cell">{m.venue}</td>
+                <td class="px-4 py-3 text-center font-mono font-bold tabular-nums">
+                  {m.score.us}–{m.score.them}
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <ResultBadge r={r} />
+                </td>
+                <td class="px-4 py-3 text-sm hidden md:table-cell">
+                  {momPlayer ? (
+                    <a
+                      href={`/squad/${momPlayer.id}`}
+                      class="hover:text-accent-light transition-colors"
+                    >
+                      {momPlayer.name}
+                    </a>
+                  ) : (
+                    <span class="text-border">—</span>
+                  )}
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <a href={`/matches/${m.id}`} class="text-accent-light text-xs hover:underline">
+                    View →
+                  </a>
+                </td>
+              </tr>
+            );
+          })
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div id="no-results" class="hidden text-center text-muted py-12">No results for this season.</div>
+</Layout>
+
+<script>
+  const filter = document.getElementById('season-filter') as HTMLSelectElement;
+  const rows = document.querySelectorAll<HTMLTableRowElement>('#results-body tr');
+  const noResults = document.getElementById('no-results')!;
+
+  filter.addEventListener('change', () => {
+    const val = filter.value;
+    let visible = 0;
+    rows.forEach((row) => {
+      const match = val === 'all' || row.dataset.season === val;
+      row.classList.toggle('hidden', !match);
+      if (match) visible++;
+    });
+    noResults.classList.toggle('hidden', visible > 0);
+  });
+</script>

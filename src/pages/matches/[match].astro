@@ -1,0 +1,142 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ResultBadge from '../../components/ResultBadge.astro';
+import matches from '../../data/matches.json';
+import players from '../../data/players.json';
+import { result, formatDate } from '../../lib/stats';
+import type { Match } from '../../lib/stats';
+
+export function getStaticPaths() {
+  return (matches as Match[]).map((m) => ({
+    params: { match: m.id },
+    props: { match: m },
+  }));
+}
+
+interface Props {
+  match: Match;
+}
+const { match: m } = Astro.props;
+
+const r = result(m.score);
+
+function playerName(id: string) {
+  return players.find((p) => p.id === id)?.name ?? id;
+}
+---
+
+<Layout title={`vs ${m.opponent}`}>
+  <a href="/results" class="text-muted text-sm hover:text-white transition-colors mb-6 inline-block">
+    ← Results
+  </a>
+
+  <div class="bg-surface border border-border rounded-xl p-8 mb-8">
+    <p class="text-center text-muted text-xs uppercase tracking-widest mb-6">{m.season}</p>
+
+    <div class="flex items-center justify-center gap-8 mb-6">
+      <div class="text-right flex-1">
+        <p class="font-black text-xl">Bus Park Rangers</p>
+      </div>
+      <div class="flex items-center gap-4 shrink-0">
+        <span class="text-6xl font-black tabular-nums">{m.score.us}</span>
+        <span class="text-muted text-3xl">—</span>
+        <span class="text-6xl font-black tabular-nums">{m.score.them}</span>
+      </div>
+      <div class="flex-1">
+        <p class="font-black text-xl">{m.opponent}</p>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-center gap-3 text-sm text-muted mb-4">
+      <span>{formatDate(m.date)}</span>
+      <span>·</span>
+      <span class="capitalize">{m.venue}</span>
+    </div>
+
+    <div class="flex justify-center">
+      <ResultBadge r={r} size="base" />
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div class="bg-surface border border-border rounded-xl p-5">
+      <p class="text-muted text-xs uppercase tracking-widest mb-3">Scorers</p>
+      {
+        m.scorers.length === 0 ? (
+          <p class="text-muted text-sm">None recorded</p>
+        ) : (
+          <ul class="space-y-2">
+            {m.scorers.map((s) => (
+              <li class="flex items-center justify-between text-sm">
+                <a
+                  href={`/squad/${s.player}`}
+                  class="font-medium hover:text-accent-light transition-colors"
+                >
+                  {playerName(s.player)}
+                </a>
+                <span class="text-accent-light font-bold tabular-nums">
+                  {s.goals > 1 ? `×${s.goals}` : '⚽'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </div>
+
+    <div class="bg-surface border border-border rounded-xl p-5">
+      <p class="text-muted text-xs uppercase tracking-widest mb-3">Assisters</p>
+      {
+        m.assisters.length === 0 ? (
+          <p class="text-muted text-sm">None recorded</p>
+        ) : (
+          <ul class="space-y-2">
+            {m.assisters.map((a) => (
+              <li class="flex items-center justify-between text-sm">
+                <a
+                  href={`/squad/${a.player}`}
+                  class="font-medium hover:text-accent-light transition-colors"
+                >
+                  {playerName(a.player)}
+                </a>
+                <span class="text-muted font-bold tabular-nums">
+                  {a.assists > 1 ? `×${a.assists}` : '🎯'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </div>
+
+    <div class="bg-surface border border-border rounded-xl p-5">
+      <p class="text-muted text-xs uppercase tracking-widest mb-3">Man of the Match</p>
+      {
+        m.mom ? (
+          <a
+            href={`/squad/${m.mom}`}
+            class="flex items-center gap-3 group"
+          >
+            <span class="text-yellow-400 text-2xl">★</span>
+            <span class="font-bold group-hover:text-accent-light transition-colors">
+              {playerName(m.mom)}
+            </span>
+          </a>
+        ) : (
+          <p class="text-muted text-sm">Not awarded</p>
+        )
+      }
+    </div>
+  </div>
+
+  {
+    m.report && (
+      <section class="bg-surface border border-border rounded-xl p-6">
+        <h2 class="text-sm uppercase tracking-widest text-muted mb-4">Match Report</h2>
+        <div class="prose prose-invert prose-sm max-w-none text-white/80 leading-relaxed whitespace-pre-wrap">
+          {m.report}
+        </div>
+      </section>
+    )
+  }
+</Layout>

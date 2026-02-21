@@ -1,0 +1,15 @@
+[
+  {
+    "id": "2026-02-18-vs-tbc",
+    "date": "2026-02-18",
+    "season": "2025/26",
+    "opponent": "TBC",
+    "venue": "away",
+    "score": { "us": 1, "them": 6 },
+    "squad": ["james-harrison"],
+    "scorers": [],
+    "assisters": [],
+    "mom": null,
+    "report": null
+  }
+]
